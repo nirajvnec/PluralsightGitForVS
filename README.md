@@ -1,4 +1,4 @@
-private async void m_searchControl_SearchEvent(object sender, SearchRiskAttributeEventArgs e)
+private async void m_searchControlSearchEvent(object sender, SearchRiskAttributeEventArgs e)
 {
     pnlSearch.Visible = true;
     breakdown_attributes.Visible = false;
@@ -6,12 +6,42 @@ private async void m_searchControl_SearchEvent(object sender, SearchRiskAttribut
     breakdown_headings_combo_box.SelectedIndex = 1;
     DisableBreakdownsByText(m_global_cache.HideBreakdownAndDrilldowns);
 
+    var selectedCalculationMethod = this.GetSelectedMethod();
+
+    if (ctlCalculationMethod.SelectedMethod is CsCalculationContribution && 
+        ((CsCalculationContribution)ctlCalculationMethod.SelectedMethod).IsErcType)
+    {
+        if (rbtnConstant.Checked)
+        {
+            RemoveColumnRowBreakdown("cobdate", CobDateBreakdown);
+            DisableBreakdownByText(CobDateBreakdown, true);
+        }
+        else
+        {
+            DisableBreakdownChooseDetailsOption(CobDateBreakdown, false);
+            DisableBreakdownByText(RISK_TYPE, false);
+        }
+    }
+    else
+    {
+        DisableBreakdownByText(CobDateBreakdown, false);
+        DisableBreakdownChooseDetailsOption(CobDateBreakdown, true);
+
+        if (!(selectedCalculationMethod is CsCalculationMethodBMCPlStrip) && 
+            !(selectedCalculationMethod is CsCalculationMethodRNIVMarginalToVar))
+        {
+            DisableBreakdownByText(RISK_TYPE, false);
+        }
+    }
+
     var progress = new Progress<int>(percent =>
     {
-        // Update UI based on progress, e.g., updating a progress bar or a label
-        // Example: progressBar.Value = percent;
+        // Update the UI based on progress
+        // For example, updating a progress bar
+        // progressBar.Value = percent;
     });
 
+    // Modify the SearchAttributes method to support Progress<T> and call it here
     await SearchAttributes(e, progress);
 
     breakdown_attributes.Visible = true;
