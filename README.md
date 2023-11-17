@@ -1,66 +1,51 @@
 public void RedrawItems(IProgress<int> progress)
 {
-    // Initial UI operations need to be done on the UI thread
-    this.Invoke(new MethodInvoker(() =>
-    {
-        this.SuspendLayout();
-        lbl_separator.Visible = false;
-        m_drag_drop_items.SuspendLayout();
-    }));
-
+    // Gather all the updates first without directly modifying the UI controls
+    var updates = new List<Action>();
     bool itemFoundInHeader = false;
     string currentHeading = m_current_heading_button == null ? string.Empty : m_current_heading_button.Text;
     int labelTop = SIZE_ITEM_SPACING;
 
-    int totalItems = m_drag_drop_items.Count; // Assuming this can be accessed safely from any thread
+    int totalItems = m_drag_drop_items.Count;
     int processedItems = 0;
 
-    foreach (CtlDragDropItem dragDropItem in m_drag_drop_items) // Assuming this enumeration is thread-safe
+    foreach (CtlDragDropItem dragDropItem in m_drag_drop_items)
     {
-        // Thread-safe check before UI operation
         string header = dragDropItem.Header.ToUpper();
-        string text = dragDropItem.Text.ToUpper();
+        bool isCurrentHeading = header == currentHeading.ToUpper();
+        bool isDragDropItemVisible = !dragDropItem.Disabled && !dragDropItem.IsDraggedAway;
+        bool isItemInCurrentHeading = (isCurrentHeading || currentHeading == CsBreakDownHeading.HEADING_ALL + CsBreakDownHeading.HEADING_SUFFIX) && isDragDropItemVisible;
 
-        // UI operations are performed within the Invoke call
-        this.Invoke(new MethodInvoker(() =>
+        // Prepare the updates
+        if (isItemInCurrentHeading)
         {
-            if ((header == currentHeading.ToUpper() || currentHeading == CsBreakDownHeading.HEADING_ALL + CsBreakDownHeading.HEADING_SUFFIX) &&
-                !dragDropItem.Disabled && !dragDropItem.IsDraggedAway &&
-                header != CsBreakDownHeading.HEADING_VARANALYSIS + CsBreakDownHeading.HEADING_SUFFIX &&
-                header != CsBreakDownHeading.HEADING_IRCANALYSIS + CsBreakDownHeading.HEADING_SUFFIX)
+            int currentLabelTop = labelTop;
+            updates.Add(() => 
             {
-                dragDropItem.Top = labelTop;
-                labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
+                dragDropItem.Top = currentLabelTop;
                 dragDropItem.Visible = true;
-                itemFoundInHeader = true;
-            }
-            else if ((header == currentHeading.ToUpper() && 
-                     currentHeading == CsBreakDownHeading.HEADING_FREQ_USED + CsBreakDownHeading.HEADING_SUFFIX &&
-                     dragDropItem.IsFrequentlyUsed) ||
-                     (!dragDropItem.Disabled && 
-                      !dragDropItem.IsDraggedAway && 
-                      text == "SCENARIO RESULT TYPE" && 
-                      currentHeading == CsBreakDownHeading.HEADING_SCENARIOS + CsBreakDownHeading.HEADING_SUFFIX))
-            {
-                dragDropItem.Top = labelTop;
-                labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
-                itemFoundInHeader = true;
-                dragDropItem.Visible = true;
-            }
-            else
-            {
-                dragDropItem.Visible = false;
-            }
-        }));
+            });
+            labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
+            itemFoundInHeader = true;
+        }
+        else
+        {
+            updates.Add(() => dragDropItem.Visible = false);
+        }
 
         processedItems++;
         int progressPercentage = (processedItems * 100) / totalItems;
         progress?.Report(progressPercentage);
     }
 
-    // Final UI update operations need to be done on the UI thread
+    // Apply all updates in a single Invoke call
     this.Invoke(new MethodInvoker(() =>
     {
+        foreach (var update in updates)
+        {
+            update.Invoke();
+        }
+
         label_area_panel.Height = labelTop;
         empty_text_label.Visible = !itemFoundInHeader;
         if (!itemFoundInHeader)
@@ -68,11 +53,10 @@ public void RedrawItems(IProgress<int> progress)
             empty_text_label.Top = labelTop;
         }
 
-        m_drag_drop_items.ResumeLayout(false);
         this.ResumeLayout(false);
     }));
 
-    progress?.Report(100); // Report completion
+    progress?.Report(100);
 }
 
 
