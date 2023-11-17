@@ -80,49 +80,55 @@ public bool RedrawSearchItems(string searchstring, IProgress<int> progress)
     bool resultfound = false;
     string[] searchStringArray = searchstring.Split(new Char[] { ' ', '+', '-', '_', '(', ')', '#', '@', '{', '}', '[', ']', '*', '|'}, StringSplitOptions.RemoveEmptyEntries);
 
-    this.SuspendLayout();
-    label_area_panel.Top = TopOfLabelArea;
-    lbl_separator.Visible = false;
-    m_drag_drop_items.SuspendLayout();
+    this.Invoke(new MethodInvoker(() => {
+        this.SuspendLayout();
+        label_area_panel.Top = TopOfLabelArea;
+        lbl_separator.Visible = false;
+        m_drag_drop_items.SuspendLayout();
+    }));
 
     int totalItems = m_drag_drop_items.Count;
     int processedItems = 0;
 
     foreach (CtlDragDropItem drag_drop_item in m_drag_drop_items)
     {
-        if (IsHidden(((MarsEnquiryTool.CtlDragDropBreakdown)drag_drop_item))) continue;
-        if (HideErcNtcsMnpiAttributes(((MarsEnquiryTool.CtlDragDropBreakdown)drag_drop_item))) continue;
+        bool isSubString = false;
+        this.Invoke(new MethodInvoker(() => {
+            if (IsHidden(((MarsEnquiryTool.CtlDragDropBreakdown)drag_drop_item))) return;
+            if (HideErcNtcsMnpiAttributes(((MarsEnquiryTool.CtlDragDropBreakdown)drag_drop_item))) return;
 
-        if (!drag_drop_item.IsDraggedAway)
-        {
-            isSubString = false;
-            foreach (string searchSubstring in searchStringArray)
+            if (!drag_drop_item.IsDraggedAway)
             {
-                isSubString = drag_drop_item.Text.ToUpper().StartsWith(searchSubstring.ToUpper());
-                if (isSubString) break;
-            }
+                foreach (string searchSubstring in searchStringArray)
+                {
+                    isSubString = drag_drop_item.Text.ToUpper().StartsWith(searchSubstring.ToUpper());
+                    if (isSubString) break;
+                }
 
-            if (!drag_drop_item.Disabled && isSubString)
-            {
-                drag_drop_item.Top = label_top;
-                label_top += SIZE_ITEM_SPACING + drag_drop_item.Height;
-                drag_drop_item.Visible = true;
-                resultfound = true;
+                if (!drag_drop_item.Disabled && isSubString)
+                {
+                    drag_drop_item.Top = label_top;
+                    label_top += SIZE_ITEM_SPACING + drag_drop_item.Height;
+                    drag_drop_item.Visible = true;
+                    resultfound = true;
+                }
+                else
+                {
+                    drag_drop_item.Visible = false;
+                }
             }
-            else
-            {
-                drag_drop_item.Visible = false;
-            }
-        }
+        }));
 
         processedItems++;
         progress?.Report((processedItems * 100) / totalItems);
     }
 
-    m_drag_drop_items.ResumeLayout();
-    label_area_panel.Height = label_top;
-    RedrawScrollArea();
-    this.ResumeLayout();
+    this.Invoke(new MethodInvoker(() => {
+        m_drag_drop_items.ResumeLayout(false);
+        label_area_panel.Height = label_top;
+        RedrawScrollArea();
+        this.ResumeLayout(false);
+    }));
 
     return resultfound;
 }
