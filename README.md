@@ -1,4 +1,11 @@
+
+
+// To unsubscribe
+new_item.DisabledChanged -= CtlDragDropItemDisabledChanged;
+
+// To subscribe
 new_item.DisabledChanged += async (sender, e) => await CtlDragDropItemDisabledChanged(sender, e);
+
 
 
 public void RedrawItems(IProgress<int> progress)
