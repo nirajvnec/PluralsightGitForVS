@@ -1,3 +1,11 @@
+// This is the actual event handler that matches the expected signature for event handlers.
+private async void CtlDragDropItem_DisabledChanged_Handler(object sender, EventArgs e)
+{
+    if (sender is CtlDragDropItem dragDropItem)
+    {
+        await CtlDragDropItem_DisabledChanged(dragDropItem);
+    }
+}
 
 
 // To unsubscribe
