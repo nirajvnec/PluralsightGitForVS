@@ -1,3 +1,93 @@
+public void RedrawItems(IProgress<int> progress)
+{
+    this.Invoke(new MethodInvoker(() =>
+    {
+        this.SuspendLayout();
+        lbl_separator.Visible = false;
+    }));
+
+    bool itemFoundInHeader = false;
+    string currentHeading = string.Empty;
+    int labelTop = SIZE_ITEM_SPACING;
+
+    if (w_current_heading_button != null)
+    {
+        currentHeading = w_current_heading_button.Text;
+    }
+
+    m_drag_drop_items.Invoke(new MethodInvoker(() => { m_drag_drop_items.SuspendLayout(); }));
+
+    int totalItems = m_drag_drop_items.Count; // Assuming this can be accessed safely from any thread
+    int processedItems = 0;
+
+    foreach (CtlDragDropItem dragDropItem in m_drag_drop_items) // Assuming this enumeration is thread-safe
+    {
+        bool isSubString = false;
+        string header = dragDropItem.Header.ToUpper();
+        string text = dragDropItem.Text.ToUpper();
+
+        // Invoke must be used for any UI element access here
+        this.Invoke(new MethodInvoker(() =>
+        {
+            if ((header == currentHeading.ToUpper() || currentHeading == CsBreakDownHeading.HEADING_ALL + CsBreakDownHeading.HEADING_SUFFIX) &&
+                !dragDropItem.Disabled && !dragDropItem.IsDraggedAway &&
+                header != CsBreakDownHeading.HEADING_VARANALYSIS + CsBreakDownHeading.HEADING_SUFFIX &&
+                header != CsBreakDownHeading.HEADING_IRCANALYSIS + CsBreakDownHeading.HEADING_SUFFIX)
+            {
+                dragDropItem.Top = labelTop;
+                labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
+                dragDropItem.Visible = true;
+                itemFoundInHeader = true;
+            }
+            else if (header == currentHeading.ToUpper() &&
+                     currentHeading == CsBreakDownHeading.HEADING_FREQ_USED + CsBreakDownHeading.HEADING_SUFFIX &&
+                     dragDropItem.IsFrequentlyUsed &&
+                     !dragDropItem.Disabled &&
+                     !dragDropItem.IsDraggedAway)
+            {
+                // This item is visible
+                dragDropItem.Top = labelTop;
+                labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
+                itemFoundInHeader = true;
+                dragDropItem.Visible = true;
+            }
+            else
+            {
+                // This item is not visible
+                dragDropItem.Visible = false;
+            }
+        }));
+
+        processedItems++;
+        int progressPercentage = (processedItems * 100) / totalItems;
+        progress?.Report(progressPercentage);
+    }
+
+    // Now perform any final UI updates
+    this.Invoke(new MethodInvoker(() =>
+    {
+        m_drag_drop_items.ResumeLayout(false);
+        label_area_panel.Height = labelTop;
+        empty_text_label.Visible = !itemFoundInHeader;
+        if (!itemFoundInHeader)
+        {
+            empty_text_label.Top = labelTop; // Set the position for the empty_text_label
+        }
+
+        this.ResumeLayout(false);
+    }));
+
+    // Final progress report to indicate completion
+    progress?.Report(100);
+}
+
+
+
+
+
+
+
+
 // Assuming you have already defined and initialized your TableLayoutPanel
 // and it's named tableLayoutPanel1 in your form designer code
 
