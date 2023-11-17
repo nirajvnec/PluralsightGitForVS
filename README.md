@@ -1,3 +1,28 @@
+// Assuming you have already defined and initialized your TableLayoutPanel
+// and it's named tableLayoutPanel1 in your form designer code
+
+// Adding a new ProgressBar control
+ProgressBar progressBar = new ProgressBar();
+progressBar.Name = "progressBar";
+progressBar.Dock = DockStyle.Fill;
+
+// Add a new RowStyle for the ProgressBar at the second row (index 1)
+// If your TableLayoutPanel does not have a second row, you need to add one
+tableLayoutPanel1.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+tableLayoutPanel1.RowCount = 2; // Set the row count to 2
+tableLayoutPanel1.Controls.Add(progressBar, 0, 1); // Add progressBar to the new row
+
+// Set the column span if you want the ProgressBar to span across multiple columns
+tableLayoutPanel1.SetColumnSpan(progressBar, tableLayoutPanel1.ColumnCount);
+
+// Now you have your ProgressBar added to the second row of your TableLayoutPanel
+
+
+
+
+
+
+
 private async void m_searchControlSearchEvent(object sender, SearchRiskAttributeEventArgs e)
 {
     pnlSearch.Visible = true;
