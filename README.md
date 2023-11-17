@@ -1,3 +1,17 @@
+private void OtherFilterGridRiskTypesChanged(object sender, EventArgs e)
+{
+    // Call the async method without awaiting it
+    Task.Run(async () => await SetRiskTypeAttributesAsync(attributes));
+}
+
+// Assuming SetRiskTypeAttributesAsync is your async Task method
+private async Task SetRiskTypeAttributesAsync(StringCollection attributes)
+{
+    // Your async code here
+}
+
+
+
 public void RedrawItems(IProgress<int> progress)
 {
     // Gather all the updates first without directly modifying the UI controls
