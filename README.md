@@ -1,3 +1,6 @@
+new_item.DisabledChanged += async (sender, e) => await CtlDragDropItemDisabledChanged(sender, e);
+
+
 public void RedrawItems(IProgress<int> progress)
 {
     var updates = new List<Action>();
