@@ -1,3 +1,102 @@
+public void RedrawItems(IProgress<int> progress)
+{
+    var updates = new List<Action>();
+    bool itemFoundInHeader = false;
+    string currentHeading = m_current_heading_button == null ? string.Empty : m_current_heading_button.Text;
+    int labelTop = SIZE_ITEM_SPACING;
+
+    // Suspend layout logic for both the label area and the drag-drop items
+    label_area_panel.SuspendLayout();
+    m_drag_drop_items.SuspendLayout();
+
+    int totalItems = m_drag_drop_items.Count;
+    int processedItems = 0;
+
+    foreach (CtlDragDropItem dragDropItem in m_drag_drop_items)
+    {
+        string header = dragDropItem.Header.ToUpper();
+        bool isCurrentHeading = header == currentHeading.ToUpper();
+        bool isDragDropItemVisible = !dragDropItem.Disabled && !dragDropItem.IsDraggedAway;
+        bool isItemInCurrentHeading = (isCurrentHeading || currentHeading == CsBreakDownHeading.HEADING_ALL + CsBreakDownHeading.HEADING_SUFFIX) && isDragDropItemVisible;
+
+        // Prepare the updates
+        if (isItemInCurrentHeading)
+        {
+            int currentLabelTop = labelTop;
+            updates.Add(() => 
+            {
+                dragDropItem.Top = currentLabelTop;
+                dragDropItem.Visible = true;
+            });
+            labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
+            itemFoundInHeader = true;
+        }
+        else
+        {
+            updates.Add(() => dragDropItem.Visible = false);
+        }
+
+        processedItems++;
+        int progressPercentage = (processedItems * 100) / totalItems;
+        progress?.Report(progressPercentage);
+    }
+
+    // Perform all the UI updates using BeginInvoke
+    foreach (var update in updates)
+    {
+        this.BeginInvoke(new MethodInvoker(update));
+    }
+
+    // Continue on the UI thread to resume layout and update the panel height
+    this.BeginInvoke(new MethodInvoker(() =>
+    {
+        label_area_panel.Height = labelTop;
+        empty_text_label.Visible = !itemFoundInHeader;
+        if (!itemFoundInHeader)
+        {
+            empty_text_label.Top = labelTop;
+        }
+
+        // Resume layout logic
+        m_drag_drop_items.ResumeLayout(false);
+        label_area_panel.ResumeLayout(false);
+    }));
+
+    // Final report for progress
+    progress?.Report(100);
+}
+
+
+
+
+
+
+
+private async void CtlDragDropItemDisabledChanged(object sender, DragDropItemEventArgs e)
+{
+    // You can await an asynchronous method directly
+    await Method1();
+
+    // Or if you need to run something on a background thread and await its completion:
+    await Task.Run(async () => 
+    {
+        // Some background work here. If Method1 is already async, you don't need Task.Run.
+        await Method1();
+    });
+
+    // More code can follow here and it will run after the awaited Task has completed.
+}
+
+private async Task Method1()
+{
+    // Simulate an async operation
+    await Task.Delay(1000);
+}
+
+
+
+
+
 private void OtherFilterGridRiskTypesChanged(object sender, EventArgs e)
 {
     // Call the async method without awaiting it
