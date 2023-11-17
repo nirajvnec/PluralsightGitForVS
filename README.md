@@ -38,8 +38,8 @@ public void RedrawItems(IProgress<int> progress)
         progress?.Report(progressPercentage);
     }
 
-    // Apply all updates in a single Invoke call
-    this.Invoke(new MethodInvoker(() =>
+    // Apply all updates in a single BeginInvoke call
+    this.BeginInvoke(new MethodInvoker(() =>
     {
         foreach (var update in updates)
         {
@@ -53,10 +53,22 @@ public void RedrawItems(IProgress<int> progress)
             empty_text_label.Top = labelTop;
         }
 
+        m_drag_drop_items.ResumeLayout(false);
         this.ResumeLayout(false);
     }));
 
-    progress?.Report(100);
+    // Report completion, consider marshaling back to the UI thread if called from a background thread
+    if (this.InvokeRequired)
+    {
+        this.BeginInvoke(new MethodInvoker(() =>
+        {
+            progress?.Report(100);
+        }));
+    }
+    else
+    {
+        progress?.Report(100);
+    }
 }
 
 
