@@ -1,32 +1,27 @@
 public void RedrawItems(IProgress<int> progress)
 {
+    // Initial UI operations need to be done on the UI thread
     this.Invoke(new MethodInvoker(() =>
     {
         this.SuspendLayout();
         lbl_separator.Visible = false;
+        m_drag_drop_items.SuspendLayout();
     }));
 
     bool itemFoundInHeader = false;
-    string currentHeading = string.Empty;
+    string currentHeading = m_current_heading_button == null ? string.Empty : m_current_heading_button.Text;
     int labelTop = SIZE_ITEM_SPACING;
-
-    if (w_current_heading_button != null)
-    {
-        currentHeading = w_current_heading_button.Text;
-    }
-
-    m_drag_drop_items.Invoke(new MethodInvoker(() => { m_drag_drop_items.SuspendLayout(); }));
 
     int totalItems = m_drag_drop_items.Count; // Assuming this can be accessed safely from any thread
     int processedItems = 0;
 
     foreach (CtlDragDropItem dragDropItem in m_drag_drop_items) // Assuming this enumeration is thread-safe
     {
-        bool isSubString = false;
+        // Thread-safe check before UI operation
         string header = dragDropItem.Header.ToUpper();
         string text = dragDropItem.Text.ToUpper();
 
-        // Invoke must be used for any UI element access here
+        // UI operations are performed within the Invoke call
         this.Invoke(new MethodInvoker(() =>
         {
             if ((header == currentHeading.ToUpper() || currentHeading == CsBreakDownHeading.HEADING_ALL + CsBreakDownHeading.HEADING_SUFFIX) &&
@@ -39,13 +34,14 @@ public void RedrawItems(IProgress<int> progress)
                 dragDropItem.Visible = true;
                 itemFoundInHeader = true;
             }
-            else if (header == currentHeading.ToUpper() &&
+            else if ((header == currentHeading.ToUpper() && 
                      currentHeading == CsBreakDownHeading.HEADING_FREQ_USED + CsBreakDownHeading.HEADING_SUFFIX &&
-                     dragDropItem.IsFrequentlyUsed &&
-                     !dragDropItem.Disabled &&
-                     !dragDropItem.IsDraggedAway)
+                     dragDropItem.IsFrequentlyUsed) ||
+                     (!dragDropItem.Disabled && 
+                      !dragDropItem.IsDraggedAway && 
+                      text == "SCENARIO RESULT TYPE" && 
+                      currentHeading == CsBreakDownHeading.HEADING_SCENARIOS + CsBreakDownHeading.HEADING_SUFFIX))
             {
-                // This item is visible
                 dragDropItem.Top = labelTop;
                 labelTop += SIZE_ITEM_SPACING + dragDropItem.Height;
                 itemFoundInHeader = true;
@@ -53,7 +49,6 @@ public void RedrawItems(IProgress<int> progress)
             }
             else
             {
-                // This item is not visible
                 dragDropItem.Visible = false;
             }
         }));
@@ -63,22 +58,21 @@ public void RedrawItems(IProgress<int> progress)
         progress?.Report(progressPercentage);
     }
 
-    // Now perform any final UI updates
+    // Final UI update operations need to be done on the UI thread
     this.Invoke(new MethodInvoker(() =>
     {
-        m_drag_drop_items.ResumeLayout(false);
         label_area_panel.Height = labelTop;
         empty_text_label.Visible = !itemFoundInHeader;
         if (!itemFoundInHeader)
         {
-            empty_text_label.Top = labelTop; // Set the position for the empty_text_label
+            empty_text_label.Top = labelTop;
         }
 
+        m_drag_drop_items.ResumeLayout(false);
         this.ResumeLayout(false);
     }));
 
-    // Final progress report to indicate completion
-    progress?.Report(100);
+    progress?.Report(100); // Report completion
 }
 
 
